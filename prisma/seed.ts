@@ -423,6 +423,91 @@ async function main() {
   });
 
   console.log("Physical inventories seeded successfully.");
+
+  // 6. Inbound Receipts
+  // A. Completed Receipt: RCP-2026-0001
+  const completedReceipt = await prisma.receipt.upsert({
+    where: { receiptNumber: "RCP-2026-0001" },
+    update: {},
+    create: {
+      receiptNumber: "RCP-2026-0001",
+      supplierName: "Apex Industrial Supply Corp",
+      supplierContact: "sales@apexindustrial.com",
+      warehouseId: mainWarehouse.id,
+      status: "DONE",
+      notes: "Initial structural stock shipment received and inspected.",
+      receivedDate: new Date("2026-09-20"),
+      createdById: admin.id,
+      validatedById: admin.id,
+      validatedAt: new Date("2026-09-20"),
+      items: {
+        create: [
+          {
+            productId: pSteelRod.id,
+            locationId: locRackA.id,
+            expectedQuantity: 150,
+            receivedQuantity: 150,
+            unitCost: 14.5,
+            notes: "Batch #STL-9812",
+          },
+        ],
+      },
+    },
+  });
+
+  // Matching StockLedger entry for completed receipt
+  const existingLedger = await prisma.stockLedger.findFirst({
+    where: { referenceNumber: "RCP-2026-0001" },
+  });
+  if (!existingLedger) {
+    await prisma.stockLedger.create({
+      data: {
+        productId: pSteelRod.id,
+        warehouseId: mainWarehouse.id,
+        locationId: locRackA.id,
+        transactionType: "RECEIPT",
+        quantityBefore: 0,
+        quantityChange: 150,
+        quantityAfter: 150,
+        referenceType: "RECEIPT",
+        referenceId: completedReceipt.id,
+        referenceNumber: "RCP-2026-0001",
+        createdById: admin.id,
+        createdAt: new Date("2026-09-20"),
+        notes: "Stock received via RCP-2026-0001 from Apex Industrial Supply Corp",
+      },
+    });
+  }
+
+  // B. Draft Receipt: RCP-2026-0002 ready for validation testing in UI
+  await prisma.receipt.upsert({
+    where: { receiptNumber: "RCP-2026-0002" },
+    update: {},
+    create: {
+      receiptNumber: "RCP-2026-0002",
+      supplierName: "Midwest Dynamics Fasteners",
+      supplierContact: "orders@midwestdynamics.com",
+      warehouseId: mainWarehouse.id,
+      status: "DRAFT",
+      notes: "Replenishment for low-stock bearings and fittings.",
+      receivedDate: new Date("2026-09-26"),
+      createdById: staff.id,
+      items: {
+        create: [
+          {
+            productId: pBearing.id,
+            locationId: locRackB.id,
+            expectedQuantity: 40,
+            receivedQuantity: 40,
+            unitCost: 4.25,
+            notes: "Bearing restock",
+          },
+        ],
+      },
+    },
+  });
+
+  console.log("Inbound receipts seeded successfully.");
 }
 
 main()

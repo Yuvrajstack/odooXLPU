@@ -227,3 +227,42 @@ Phase 2 establishes the complete structural foundation for managing products, ca
    - Full URL query parameter synchronization.
    - Strict adherence to the non-negotiable invariant: Zero direct manual stock editing from the UI.
 
+---
+
+## 10. Phase 3 Architecture: Receipts / Stock Inward Workflow
+
+Phase 3 implements the first physical stock mutation path in StockSense strictly governed by transactional invariants.
+
+### 10.1 Invariant Statement
+> **Receipt Validation Invariant:** Receipt validation atomically updates inventory, writes the corresponding `StockLedger` entries, and completes the receipt. If any operation fails, the entire transaction rolls back. There is zero possibility of partial stock mutations.
+
+### 10.2 Lifecycle & State Machine
+```
+[ DRAFT ] ────────► [ READY / WAITING ] ────────► [ DONE (Locked) ]
+    │
+    └───────────────► [ CANCELED ]
+```
+- **`DRAFT`:** Can add/remove items, adjust quantities, change supplier information or destination locations.
+- **`DONE`:** Terminal completed state. Historical record locked against modifications. Physical stock has been increased, and permanent ledger entries exist.
+- **`CANCELED`:** Voided shipment with zero stock or ledger effect.
+
+### 10.3 Transactional Flow (`ReceiptService.validateAndExecute`)
+1. **Interactive Transaction Context (`prisma.$transaction`):** Ensures all operations share an atomic boundary.
+2. **Idempotency Guard:** Checks `status !== "DONE"` inside the transaction. If already completed, duplicate attempts are immediately rejected without duplicate stock or ledger writes.
+3. **Location-Warehouse Integrity:** Asserts every destination location belongs to the receipt's target warehouse (`location.warehouseId === receipt.warehouseId`).
+4. **Physical Inventory Upsert:**
+   - Reads current on-hand quantity for each `(productId, locationId)`.
+   - Calculates `newQuantity = currentQuantity + inwardQuantity`.
+   - Updates or creates the `Inventory` record.
+5. **Immutable StockLedger Entry:**
+   - Appends an audit record capturing `quantityBefore`, `quantityChange` (+), `quantityAfter`, `referenceId = receipt.id`, and `referenceNumber = receipt.receiptNumber`.
+6. **Receipt Completion:**
+   - Marks receipt status as `DONE`, recording `validatedById` and `validatedAt`.
+7. **Rollback Guarantee:**
+   - Any database constraint failure, concurrency conflict, or validation error triggers an immediate rollback of all changes.
+
+### 10.4 Server-Side RBAC Enforcement
+- **Receipt Viewing & Drafting:** `ADMIN`, `INVENTORY_MANAGER`, `WAREHOUSE_STAFF`.
+- **Receipt Validation:** Strictly restricted to `ADMIN` and `INVENTORY_MANAGER`. `WAREHOUSE_STAFF` attempts are rejected at the service/API layer with HTTP 403.
+
+

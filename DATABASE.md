@@ -154,3 +154,6 @@ Append-only log of every single stock change in the company.
    Products with ledger history cannot be deleted (enforced via `onDelete: Restrict`).
 4. **Idempotency:**
    Operation validation endpoints verify status equals `READY` or `DRAFT` before executing, preventing double execution. Once marked `DONE`, documents cannot be re-validated.
+5. **Receipt Inward Atomicity:**
+   Validating a receipt executes in a single interactive transaction that verifies line items and locations, increments `inventory.quantity`, appends an immutable `StockLedger` audit record, and locks the receipt as `DONE` with validator attribution.
+
