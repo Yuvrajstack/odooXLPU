@@ -201,3 +201,29 @@ StockSense rejects generic, low-contrast AI dashboards in favor of:
   - `WAITING` / `LOW_STOCK`: Amber Warning
   - `OUT_OF_STOCK` / `CANCELED`: Rose Red
   - `DRAFT` / `READY`: Slate / Indigo
+
+---
+
+## 9. Phase 2 Architecture: Catalog, Topology & Inventory Visibility
+
+Phase 2 establishes the complete structural foundation for managing products, categories, warehouse facilities, locations, and global inventory visibility without any premature stock mutations:
+
+1. **Category Management (`/products/categories`):**
+   - Unique code and name enforcement.
+   - Referential integrity: Categories with active assigned products cannot be deleted.
+
+2. **Product Catalog (`/products` and `/products/[id]`):**
+   - Unique SKU enforcement.
+   - Aggregate on-hand stock calculated dynamically across all locations.
+   - Single domain-level stock status evaluator (`InventoryService.calculateStockStatus`).
+   - Audit safety: Products with historical `StockLedger` entries cannot be deleted, only deactivated.
+
+3. **Warehouse & Location Topology (`/warehouses` and `/warehouses/[id]`):**
+   - Hierarchical facilities with storage zones categorized by `LocationType` (`RACK`, `SHELF`, `BIN`, `PALLET`, `FLOOR`, `INCOMING`, `OUTGOING`, `PRODUCTION`).
+   - Unique compound constraint `[warehouseId, code]`.
+
+4. **Global Inventory Balances (`/inventory`):**
+   - Server-side, database-backed filtering by warehouse, location, category, and stock status.
+   - Full URL query parameter synchronization.
+   - Strict adherence to the non-negotiable invariant: Zero direct manual stock editing from the UI.
+

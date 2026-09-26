@@ -44,27 +44,113 @@ async function main() {
 
   console.log("Users seeded successfully.");
 
-  // 2. Warehouses & Locations
+  // 2. Categories
+  const catRaw = await prisma.category.upsert({
+    where: { code: "RAW" },
+    update: {},
+    create: {
+      name: "Raw Materials",
+      code: "RAW",
+      description: "Base metals, structural polymers, and raw fabrication inputs",
+    },
+  });
+
+  const catFinished = await prisma.category.upsert({
+    where: { code: "FIN" },
+    update: {},
+    create: {
+      name: "Finished Goods",
+      code: "FIN",
+      description: "Completed products ready for customer fulfillment",
+    },
+  });
+
+  const catHardware = await prisma.category.upsert({
+    where: { code: "HW" },
+    update: {},
+    create: {
+      name: "Hardware",
+      code: "HW",
+      description: "Mechanical fasteners, bearings, bolts, and fittings",
+    },
+  });
+
+  const catFurniture = await prisma.category.upsert({
+    where: { code: "FURN" },
+    update: {},
+    create: {
+      name: "Furniture",
+      code: "FURN",
+      description: "Office, warehouse, and industrial furnishings",
+    },
+  });
+
+  const catElectronics = await prisma.category.upsert({
+    where: { code: "ELEC" },
+    update: {},
+    create: {
+      name: "Electronics",
+      code: "ELEC",
+      description: "Cables, sensors, controllers, and wiring components",
+    },
+  });
+
+  console.log("Categories seeded successfully.");
+
+  // 3. Warehouses & Locations
   const mainWarehouse = await prisma.warehouse.upsert({
     where: { code: "WH-MAIN" },
     update: {},
     create: {
-      name: "Main Distribution Center",
+      name: "Main Warehouse",
       code: "WH-MAIN",
       address: "100 Industrial Pkwy",
       city: "Chicago",
       state: "IL",
       country: "USA",
-      locations: {
-        create: [
-          { name: "Rack A-01", code: "LOC-A01", type: LocationType.RACK },
-          { name: "Rack A-02", code: "LOC-A02", type: LocationType.RACK },
-          { name: "Rack B-01", code: "LOC-B01", type: LocationType.RACK },
-          { name: "Bin C-14", code: "LOC-C14", type: LocationType.BIN },
-          { name: "Inbound Receiving Dock", code: "LOC-IN", type: LocationType.INCOMING },
-          { name: "Outbound Shipping Dock", code: "LOC-OUT", type: LocationType.OUTGOING },
-        ],
-      },
+      active: true,
+    },
+  });
+
+  const locRackA = await prisma.location.upsert({
+    where: {
+      warehouseId_code: { warehouseId: mainWarehouse.id, code: "LOC-RACK-A" },
+    },
+    update: {},
+    create: {
+      warehouseId: mainWarehouse.id,
+      name: "Rack A",
+      code: "LOC-RACK-A",
+      type: LocationType.RACK,
+      active: true,
+    },
+  });
+
+  const locRackB = await prisma.location.upsert({
+    where: {
+      warehouseId_code: { warehouseId: mainWarehouse.id, code: "LOC-RACK-B" },
+    },
+    update: {},
+    create: {
+      warehouseId: mainWarehouse.id,
+      name: "Rack B",
+      code: "LOC-RACK-B",
+      type: LocationType.RACK,
+      active: true,
+    },
+  });
+
+  const locLoading = await prisma.location.upsert({
+    where: {
+      warehouseId_code: { warehouseId: mainWarehouse.id, code: "LOC-LOAD" },
+    },
+    update: {},
+    create: {
+      warehouseId: mainWarehouse.id,
+      name: "Loading Area",
+      code: "LOC-LOAD",
+      type: LocationType.INCOMING,
+      active: true,
     },
   });
 
@@ -72,78 +158,271 @@ async function main() {
     where: { code: "WH-PROD" },
     update: {},
     create: {
-      name: "Production Plant Warehouse",
+      name: "Production Warehouse",
       code: "WH-PROD",
       address: "45 Assembly Rd",
       city: "Detroit",
       state: "MI",
       country: "USA",
-      locations: {
-        create: [
-          { name: "Raw Material Staging", code: "LOC-RAW", type: LocationType.FLOOR },
-          { name: "Assembly Line 1", code: "LOC-PROD-1", type: LocationType.PRODUCTION },
-          { name: "Finished Goods Rack", code: "LOC-FIN", type: LocationType.RACK },
-        ],
-      },
+      active: true,
+    },
+  });
+
+  const locRawMaterial = await prisma.location.upsert({
+    where: {
+      warehouseId_code: { warehouseId: prodWarehouse.id, code: "LOC-RAW" },
+    },
+    update: {},
+    create: {
+      warehouseId: prodWarehouse.id,
+      name: "Raw Material Area",
+      code: "LOC-RAW",
+      type: LocationType.FLOOR,
+      active: true,
+    },
+  });
+
+  const locFinishedGoods = await prisma.location.upsert({
+    where: {
+      warehouseId_code: { warehouseId: prodWarehouse.id, code: "LOC-FIN" },
+    },
+    update: {},
+    create: {
+      warehouseId: prodWarehouse.id,
+      name: "Finished Goods Bay",
+      code: "LOC-FIN",
+      type: LocationType.RACK,
+      active: true,
     },
   });
 
   console.log("Warehouses and locations seeded successfully.");
 
-  // 3. Categories & Products
-  const rawCat = await prisma.category.upsert({
-    where: { code: "RAW" },
-    update: {},
-    create: {
-      name: "Raw Materials",
-      code: "RAW",
-      description: "Base metals, ingots, and production inputs",
-    },
-  });
-
-  const hwCat = await prisma.category.upsert({
-    where: { code: "HW" },
-    update: {},
-    create: {
-      name: "Hardware & Fasteners",
-      code: "HW",
-      description: "Bolts, nuts, bearings, and mechanical fasteners",
-    },
-  });
-
-  const p1 = await prisma.product.upsert({
+  // 4. Products
+  const pSteelRod = await prisma.product.upsert({
     where: { sku: "SKU-STL-0012" },
     update: {},
     create: {
-      name: "Industrial Steel Rod 12mm",
+      name: "Steel Rod 12mm",
       sku: "SKU-STL-0012",
       description: "Cold-rolled structural steel bar 12mm x 3m",
-      categoryId: rawCat.id,
+      categoryId: catRaw.id,
       uom: "meters",
       reorderPoint: 50,
       minStockLevel: 20,
       costPrice: 14.5,
       sellingPrice: 22.0,
+      active: true,
     },
   });
 
-  const p2 = await prisma.product.upsert({
+  const pBolt = await prisma.product.upsert({
+    where: { sku: "SKU-BLT-1050" },
+    update: {},
+    create: {
+      name: "Hex Bolt M10x50",
+      sku: "SKU-BLT-1050",
+      description: "Zinc-plated grade 8.8 structural bolt",
+      categoryId: catHardware.id,
+      uom: "boxes",
+      reorderPoint: 200,
+      minStockLevel: 50,
+      costPrice: 18.0,
+      sellingPrice: 32.5,
+      active: true,
+    },
+  });
+
+  const pBearing = await prisma.product.upsert({
     where: { sku: "SKU-BRG-6204" },
     update: {},
     create: {
       name: "Ball Bearing 6204-2RS",
       sku: "SKU-BRG-6204",
       description: "Deep groove sealed ball bearing 20x47x14mm",
-      categoryId: hwCat.id,
+      categoryId: catHardware.id,
       uom: "units",
       reorderPoint: 50,
       minStockLevel: 15,
       costPrice: 4.25,
       sellingPrice: 8.5,
+      active: true,
     },
   });
 
-  console.log("Products and categories seeded successfully.");
+  const pChair = await prisma.product.upsert({
+    where: { sku: "SKU-CHR-010" },
+    update: {},
+    create: {
+      name: "Ergonomic Industrial Chair",
+      sku: "SKU-CHR-010",
+      description: "High-durability polyurethane ESD assembly chair",
+      categoryId: catFurniture.id,
+      uom: "units",
+      reorderPoint: 15,
+      minStockLevel: 5,
+      costPrice: 85.0,
+      sellingPrice: 140.0,
+      active: true,
+    },
+  });
+
+  const pTable = await prisma.product.upsert({
+    where: { sku: "SKU-TBL-044" },
+    update: {},
+    create: {
+      name: "Heavy Duty Workstation Table",
+      sku: "SKU-TBL-044",
+      description: "Steel frame workbench 1800x800mm with laminate top",
+      categoryId: catFurniture.id,
+      uom: "units",
+      reorderPoint: 8,
+      minStockLevel: 2,
+      costPrice: 220.0,
+      sellingPrice: 380.0,
+      active: true,
+    },
+  });
+
+  const pCable = await prisma.product.upsert({
+    where: { sku: "SKU-CBL-4X15" },
+    update: {},
+    create: {
+      name: "Industrial Copper Cable 4-Core",
+      sku: "SKU-CBL-4X15",
+      description: "Flexible PVC insulated power cable 4x1.5mm2",
+      categoryId: catElectronics.id,
+      uom: "meters",
+      reorderPoint: 100,
+      minStockLevel: 40,
+      costPrice: 2.8,
+      sellingPrice: 4.5,
+      active: true,
+    },
+  });
+
+  console.log("Products seeded successfully.");
+
+  // 5. Physical Inventory Balances across Locations
+  // Steel Rod: 150 at Rack A, 60 at Rack B, 30 at Raw Material (Total 240, In Stock)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pSteelRod.id, locationId: locRackA.id },
+    },
+    update: { quantity: 150 },
+    create: {
+      productId: pSteelRod.id,
+      locationId: locRackA.id,
+      warehouseId: mainWarehouse.id,
+      quantity: 150,
+      reservedQuantity: 0,
+    },
+  });
+
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pSteelRod.id, locationId: locRackB.id },
+    },
+    update: { quantity: 60 },
+    create: {
+      productId: pSteelRod.id,
+      locationId: locRackB.id,
+      warehouseId: mainWarehouse.id,
+      quantity: 60,
+      reservedQuantity: 0,
+    },
+  });
+
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pSteelRod.id, locationId: locRawMaterial.id },
+    },
+    update: { quantity: 30 },
+    create: {
+      productId: pSteelRod.id,
+      locationId: locRawMaterial.id,
+      warehouseId: prodWarehouse.id,
+      quantity: 30,
+      reservedQuantity: 0,
+    },
+  });
+
+  // Bearing: 8 at Rack B (Reorder point 50 -> Low Stock!)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pBearing.id, locationId: locRackB.id },
+    },
+    update: { quantity: 8 },
+    create: {
+      productId: pBearing.id,
+      locationId: locRackB.id,
+      warehouseId: mainWarehouse.id,
+      quantity: 8,
+      reservedQuantity: 0,
+    },
+  });
+
+  // Bolt: 0 units anywhere (Reorder point 200 -> Out of Stock!)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pBolt.id, locationId: locRackA.id },
+    },
+    update: { quantity: 0 },
+    create: {
+      productId: pBolt.id,
+      locationId: locRackA.id,
+      warehouseId: mainWarehouse.id,
+      quantity: 0,
+      reservedQuantity: 0,
+    },
+  });
+
+  // Chair: 25 at Finished Goods Bay (In Stock)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pChair.id, locationId: locFinishedGoods.id },
+    },
+    update: { quantity: 25 },
+    create: {
+      productId: pChair.id,
+      locationId: locFinishedGoods.id,
+      warehouseId: prodWarehouse.id,
+      quantity: 25,
+      reservedQuantity: 2,
+    },
+  });
+
+  // Table: 4 at Finished Goods Bay (Reorder point 8 -> Low Stock!)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pTable.id, locationId: locFinishedGoods.id },
+    },
+    update: { quantity: 4 },
+    create: {
+      productId: pTable.id,
+      locationId: locFinishedGoods.id,
+      warehouseId: prodWarehouse.id,
+      quantity: 4,
+      reservedQuantity: 0,
+    },
+  });
+
+  // Cable: 350 at Rack A (In Stock)
+  await prisma.inventory.upsert({
+    where: {
+      productId_locationId: { productId: pCable.id, locationId: locRackA.id },
+    },
+    update: { quantity: 350 },
+    create: {
+      productId: pCable.id,
+      locationId: locRackA.id,
+      warehouseId: mainWarehouse.id,
+      quantity: 350,
+      reservedQuantity: 20,
+    },
+  });
+
+  console.log("Physical inventories seeded successfully.");
 }
 
 main()

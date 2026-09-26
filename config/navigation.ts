@@ -1,6 +1,8 @@
 import {
   LayoutDashboard,
   Package,
+  Boxes,
+  Layers,
   Warehouse,
   ArrowDownLeft,
   ArrowUpRight,
@@ -44,6 +46,16 @@ export const navigationConfig: NavSection[] = [
         title: "Products",
         href: "/products",
         icon: Package,
+      },
+      {
+        title: "Categories",
+        href: "/products/categories",
+        icon: Layers,
+      },
+      {
+        title: "Stock Balances",
+        href: "/inventory",
+        icon: Boxes,
       },
       {
         title: "Warehouses",
