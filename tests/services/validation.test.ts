@@ -119,4 +119,55 @@ describe("Domain Validation Schemas", () => {
       expect(result.success).toBe(false);
     });
   });
+
+  describe("Authentication Validation (Mockup Rules)", () => {
+    it("accepts valid signup data matching all 4 rules", async () => {
+      const { signupSchema } = await import("@/lib/validations/auth");
+      const result = signupSchema.safeParse({
+        loginId: "manager_01",
+        email: "manager@test.com",
+        password: "Password123!",
+        confirmPassword: "Password123!",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("rejects login ID shorter than 6 or longer than 12 chars", async () => {
+      const { signupSchema } = await import("@/lib/validations/auth");
+      const shortResult = signupSchema.safeParse({
+        loginId: "user",
+        email: "user@test.com",
+        password: "Password123!",
+        confirmPassword: "Password123!",
+      });
+      expect(shortResult.success).toBe(false);
+
+      const longResult = signupSchema.safeParse({
+        loginId: "super_long_user_id_123",
+        email: "user@test.com",
+        password: "Password123!",
+        confirmPassword: "Password123!",
+      });
+      expect(longResult.success).toBe(false);
+    });
+
+    it("rejects password missing special characters or shorter than 9 chars", async () => {
+      const { signupSchema } = await import("@/lib/validations/auth");
+      const noSpecial = signupSchema.safeParse({
+        loginId: "valid_user",
+        email: "user@test.com",
+        password: "Password1234",
+        confirmPassword: "Password1234",
+      });
+      expect(noSpecial.success).toBe(false);
+
+      const tooShort = signupSchema.safeParse({
+        loginId: "valid_user",
+        email: "user@test.com",
+        password: "Pass1!",
+        confirmPassword: "Pass1!",
+      });
+      expect(tooShort.success).toBe(false);
+    });
+  });
 });

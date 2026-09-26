@@ -10,7 +10,15 @@ export type LocationType =
   | "OUTGOING"
   | "PRODUCTION";
 
-export type OperationStatus = "DRAFT" | "WAITING" | "READY" | "DONE" | "CANCELED";
+export const OperationStatus = {
+  DRAFT: "DRAFT",
+  WAITING: "WAITING",
+  READY: "READY",
+  DONE: "DONE",
+  CANCELED: "CANCELED",
+} as const;
+
+export type OperationStatus = (typeof OperationStatus)[keyof typeof OperationStatus];
 
 export type LedgerTransactionType =
   | "RECEIPT"

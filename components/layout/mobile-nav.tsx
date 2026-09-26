@@ -88,14 +88,14 @@ export function MobileNav({ open, onClose, currentUser }: MobileNavProps) {
 
         {/* User bar */}
         <div className="p-3 border-t bg-slate-50 flex items-center justify-between">
-          <div className="min-w-0">
+          <Link href="/profile" onClick={onClose} className="min-w-0 hover:opacity-80">
             <p className="text-xs font-semibold text-foreground truncate">
               {user.name}
             </p>
             <p className="text-[10px] text-muted-foreground font-mono">
-              {user.role}
+              {user.role} • My Profile
             </p>
-          </div>
+          </Link>
           <button
             onClick={() => {
               window.location.href = "/login";

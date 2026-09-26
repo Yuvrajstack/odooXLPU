@@ -11,8 +11,9 @@ async function main() {
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@stocksense.io" },
-    update: {},
+    update: { loginId: "admin_user" },
     create: {
+      loginId: "admin_user",
       name: "Alex Vance",
       email: "admin@stocksense.io",
       passwordHash,
@@ -22,8 +23,9 @@ async function main() {
 
   const manager = await prisma.user.upsert({
     where: { email: "manager@stocksense.io" },
-    update: {},
+    update: { loginId: "manager123" },
     create: {
+      loginId: "manager123",
       name: "Marcus Brody",
       email: "manager@stocksense.io",
       passwordHash,
@@ -33,8 +35,9 @@ async function main() {
 
   const staff = await prisma.user.upsert({
     where: { email: "staff@stocksense.io" },
-    update: {},
+    update: { loginId: "staff_123" },
     create: {
+      loginId: "staff_123",
       name: "Sarah Jenkins",
       email: "staff@stocksense.io",
       passwordHash,

@@ -156,4 +156,29 @@ Append-only log of every single stock change in the company.
    Operation validation endpoints verify status equals `READY` or `DRAFT` before executing, preventing double execution. Once marked `DONE`, documents cannot be re-validated.
 5. **Receipt Inward Atomicity:**
    Validating a receipt executes in a single interactive transaction that verifies line items and locations, increments `inventory.quantity`, appends an immutable `StockLedger` audit record, and locks the receipt as `DONE` with validator attribution.
+6. **Delivery Outward Atomicity:**
+   A validated delivery decreases `Inventory` and creates the corresponding `DELIVERY` `StockLedger` entries atomically.
+7. **Negative Stock Prohibition:**
+   `Inventory` quantity must never become negative (`newQuantity >= 0`).
+8. **Delivery Immutability:**
+   A completed `Delivery` (`status = DONE`) cannot be edited, modified, or canceled.
+9. **Warehouse Boundary Constraint:**
+   A `Delivery` can only consume inventory from locations belonging to its designated warehouse facility (`item.location.warehouseId === delivery.warehouseId`).
+10. **Concurrency & Capacity Invariant:**
+    The sum of successful delivery quantities must never exceed available stock. Concurrency is enforced via deterministic lock ordering and PostgreSQL row-level locks (`SELECT ... FOR UPDATE`).
+11. **Transfer Atomicity & Balance Invariant:**
+    A completed transfer atomically decreases source inventory and increases destination inventory within a single database transaction.
+12. **Transfer Dual-Ledger Creation:**
+    A transfer creates exactly one `TRANSFER_OUT` and one `TRANSFER_IN` ledger entry per transferred line, linked by `referenceType = TRANSFER` and `referenceId = transfer.id`.
+13. **Zero Net Stock Invariant:**
+    Total company stock is unchanged by a transfer ($\sum \text{Stock After} \equiv \sum \text{Stock Before}$).
+14. **Source Inventory Non-Negative Rule:**
+    Source inventory can never become negative ($\text{sourceQuantity} - \text{transferQuantity} \ge 0$).
+15. **Warehouse/Location Topology Integrity:**
+    Source location must belong to source warehouse, and destination location must belong to destination warehouse.
+16. **Same Location Prohibition:**
+    Source and destination cannot be the same location (`sourceLocationId !== destinationLocationId`).
+17. **Transfer Immutability & Idempotency:**
+    Completed transfers (`status = DONE`) are immutable, cannot be edited or canceled, and cannot be re-validated.
+
 
